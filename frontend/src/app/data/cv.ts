@@ -14,7 +14,7 @@ export const PROFILE = {
   github: 'marioal1990',
   githubUrl: 'https://github.com/marioal1990',
   // Reemplaza con la URL de tu perfil
-  linkedinUrl: 'https://www.linkedin.com/',
+  linkedinUrl: 'https://www.linkedin.com/in/marayal/',
   summary:
     'Más de 15 años desarrollando y evolucionando aplicaciones empresariales. Java es mi lenguaje principal desde 2010, con foco en Spring Boot, backend e integración de sistemas, y experiencia Full Stack con Angular y TypeScript. He trabajado en salud, banca, medios de pago, retail, aviación y sector público.',
   stats: [
@@ -30,7 +30,7 @@ export const SKILLS: { group: string; items: string[] }[] = [
   { group: 'Backend', items: ['Spring Boot', 'Spring Framework', 'REST APIs', 'Node.js', 'NestJS'] },
   { group: 'Frontend', items: ['Angular', 'ExtJS', 'JSF', 'PrimeFaces', 'HTML5', 'CSS3'] },
   { group: 'Bases de datos', items: ['Oracle', 'MySQL', 'PostgreSQL', 'SQL Server', 'Sybase', 'MongoDB'] },
-  { group: 'Cloud', items: ['AWS', 'Lambda', 'S3', 'Aurora', 'DocumentDB', 'Google Cloud'] },
+  { group: 'Cloud', items: ['AWS', 'Lambda', 'S3', 'Aurora', 'DocumentDB', 'DynamoDB', 'CloudFront', 'ApiGateway', 'Google Cloud'] },
   { group: 'Herramientas', items: ['Git', 'Maven', 'Gradle', 'Jenkins', 'SonarQube', 'Docker', 'Swagger'] },
 ];
 
