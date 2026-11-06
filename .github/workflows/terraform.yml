@@ -34,20 +34,37 @@ jobs:
   plan:
     name: Plan
     runs-on: ubuntu-latest
+    # Push automático -> usuario de solo lectura (plan).
+    # Ejecución manual con "aplicar" -> el plan usa el usuario de apply. Así la PRIMERA
+    # ejecución funciona sin Terraform local: el usuario de plan aún no tiene acceso
+    # al state "portafolio/" (ese permiso lo crea este mismo apply, en iam.tf).
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.TF_PLAN_AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_PLAN_AWS_SECRET_ACCESS_KEY }}
+      PERFIL: ${{ (github.event_name == 'workflow_dispatch' && inputs.aplicar) && 'TF_APPLY' || 'TF_PLAN' }}
     outputs:
       cambios: ${{ steps.plan.outputs.cambios }}
     steps:
-      - name: Validar credenciales
+      # Elige las keys según PERFIL. Si faltan, falla con un mensaje claro
+      # (nunca usa en silencio las keys del otro usuario).
+      - name: Seleccionar credenciales
         working-directory: .
+        env:
+          PLAN_ID: ${{ secrets.TF_PLAN_AWS_ACCESS_KEY_ID }}
+          PLAN_SECRET: ${{ secrets.TF_PLAN_AWS_SECRET_ACCESS_KEY }}
+          APPLY_ID: ${{ secrets.TF_APPLY_AWS_ACCESS_KEY_ID }}
+          APPLY_SECRET: ${{ secrets.TF_APPLY_AWS_SECRET_ACCESS_KEY }}
         run: |
+          if [ "$PERFIL" = "TF_APPLY" ]; then id="$APPLY_ID"; secret="$APPLY_SECRET"; else id="$PLAN_ID"; secret="$PLAN_SECRET"; fi
           faltan=0
-          [ -n "$AWS_ACCESS_KEY_ID" ]     || { echo "::error::Falta el secret TF_PLAN_AWS_ACCESS_KEY_ID (pestaña Secrets)"; faltan=1; }
-          [ -n "$AWS_SECRET_ACCESS_KEY" ] || { echo "::error::Falta el secret TF_PLAN_AWS_SECRET_ACCESS_KEY (pestaña Secrets)"; faltan=1; }
+          [ -n "$id" ]     || { echo "::error::Falta el secret ${PERFIL}_AWS_ACCESS_KEY_ID (pestaña Secrets)"; faltan=1; }
+          [ -n "$secret" ] || { echo "::error::Falta el secret ${PERFIL}_AWS_SECRET_ACCESS_KEY (pestaña Secrets)"; faltan=1; }
           [ "$faltan" -eq 0 ] || exit 1
-          echo "Credenciales presentes"
+          echo "AWS_ACCESS_KEY_ID=$id"         >> "$GITHUB_ENV"
+          echo "AWS_SECRET_ACCESS_KEY=$secret" >> "$GITHUB_ENV"
+          echo "Usando credenciales: $PERFIL"
+
+      - name: Verificar identidad en AWS
+        working-directory: .
+        run: aws sts get-caller-identity --query Arn --output text
 
       - uses: actions/checkout@v4
 
