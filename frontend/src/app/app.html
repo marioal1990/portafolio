@@ -1,0 +1,153 @@
+<header class="nav">
+  <a class="brand" href="#inicio">MA<span>.</span></a>
+  <button class="menu-btn" (click)="menuOpen.set(!menuOpen())" aria-label="Menú">☰</button>
+  <nav [class.open]="menuOpen()" (click)="menuOpen.set(false)">
+    <a href="#experiencia">Experiencia</a>
+    <a href="#proyectos">Proyectos</a>
+    <a href="#stack">Stack</a>
+    <a href="#contacto">Contacto</a>
+  </nav>
+</header>
+
+<main>
+  <section id="inicio" class="hero wrap">
+    <p class="eyebrow mono">// {{ profile.location }}</p>
+    <h1>{{ profile.name }}</h1>
+    <h2>{{ profile.title }} <em>— {{ profile.tagline }}</em></h2>
+    <p class="lead">{{ profile.summary }}</p>
+    <div class="cta">
+      <a class="btn primary" href="#proyectos">Ver proyectos</a>
+      <a class="btn" [href]="profile.githubUrl" target="_blank" rel="noopener">GitHub ↗</a>
+      <a class="btn" [href]="'mailto:' + profile.email">Contactar</a>
+    </div>
+    <dl class="stats">
+      @for (s of profile.stats; track s.label) {
+        <div><dt>{{ s.value }}</dt><dd>{{ s.label }}</dd></div>
+      }
+    </dl>
+    <div class="clients">
+      <span class="mono">clientes</span>
+      @for (c of profile.clients; track c) { <span class="client">{{ c }}</span> }
+    </div>
+  </section>
+
+  <section id="experiencia" class="wrap">
+    <div class="section-head">
+      <span class="mono num">01</span>
+      <h3>Experiencia</h3>
+    </div>
+    <ol class="timeline">
+      @for (job of jobs; track job.company) {
+        <li>
+          <div class="when mono">{{ job.period }}</div>
+          <div class="what">
+            <h4>{{ job.company }} <small>{{ job.role }}</small></h4>
+            @for (p of job.projects; track p.name) {
+              <div class="proj">
+                <p class="proj-name">{{ p.name }}</p>
+                <ul>
+                  @for (pt of p.points; track pt) { <li>{{ pt }}</li> }
+                </ul>
+                <div class="tags">
+                  @for (t of p.tech; track t) { <span class="tag">{{ t }}</span> }
+                </div>
+              </div>
+            }
+          </div>
+        </li>
+      }
+    </ol>
+  </section>
+
+  <section id="proyectos" class="wrap">
+    <div class="section-head">
+      <span class="mono num">02</span>
+      <h3>Proyectos en GitHub</h3>
+    </div>
+
+    @if (!loading()) {
+      <div class="filters">
+        @for (l of languages(); track l) {
+          <button [class.active]="filter() === l" (click)="filter.set(l)">{{ l }}</button>
+        }
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="grid">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) { <div class="card skeleton"></div> }
+      </div>
+    } @else {
+      <div class="grid">
+        @for (r of visibleRepos(); track r.name) {
+          <a class="card" [href]="r.html_url" target="_blank" rel="noopener">
+            <div class="card-top">
+              <span class="mono folder">repo/</span>
+              <span class="arrow">↗</span>
+            </div>
+            <h5>{{ prettyName(r.name) }}</h5>
+            <p>{{ r.description || 'Sin descripción.' }}</p>
+            @if (r.topics?.length) {
+              <div class="tags">
+                @for (t of r.topics; track t) { <span class="tag">{{ t }}</span> }
+              </div>
+            }
+            <div class="meta mono">
+              @if (r.language) {
+                <span><i class="dot" [style.background]="langColor(r.language)"></i>{{ r.language }}</span>
+              }
+              @if (r.stargazers_count) { <span>★ {{ r.stargazers_count }}</span> }
+              @if (r.updated_at) { <span class="right">{{ updated(r.updated_at) }}</span> }
+            </div>
+          </a>
+        } @empty {
+          <p class="muted">No hay repositorios para este filtro.</p>
+        }
+      </div>
+      @if (usingFallback()) {
+        <p class="muted small">Mostrando una selección. <a [href]="profile.githubUrl" target="_blank" rel="noopener">Ver todos en GitHub ↗</a></p>
+      }
+    }
+  </section>
+
+  <section id="stack" class="wrap">
+    <div class="section-head">
+      <span class="mono num">03</span>
+      <h3>Stack técnico</h3>
+    </div>
+    <div class="skills">
+      @for (g of skills; track g.group) {
+        <div class="skill-group">
+          <p class="mono label">{{ g.group }}</p>
+          <div class="tags">
+            @for (s of g.items; track s) { <span class="tag big">{{ s }}</span> }
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="edu">
+      @for (e of education; track e.title) {
+        <div class="edu-item">
+          <span class="mono">{{ e.year }}</span>
+          <p><strong>{{ e.title }}</strong><br />{{ e.place }}</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section id="contacto" class="wrap contact">
+    <div class="section-head">
+      <span class="mono num">04</span>
+      <h3>Contacto</h3>
+    </div>
+    <p class="big-line">¿Buscas un desarrollador Java / Spring Boot para tu equipo?</p>
+    <a class="mail" [href]="'mailto:' + profile.email">{{ profile.email }}</a>
+    <div class="cta">
+      <a class="btn" [href]="profile.linkedinUrl" target="_blank" rel="noopener">LinkedIn ↗</a>
+      <a class="btn" [href]="profile.githubUrl" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap mono">© {{ year }} {{ profile.name }} · Hecho con Angular · Publicado en AWS CloudFront</footer>

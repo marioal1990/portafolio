@@ -1,0 +1,67 @@
+name: Deploy Portafolio
+
+on:
+  push:
+    branches: [main, master]
+    paths: ['frontend/**', '.github/workflows/deploy-frontend.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Validar configuración
+        working-directory: .          # ← antes del checkout, la carpeta "frontend" aún no existe
+        env:
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          CF_DIST_ID: ${{ vars.CF_DIST_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          faltan=0
+          [ -n "$S3_BUCKET" ]             || { echo "::error::Falta la variable S3_BUCKET (pestaña Variables)"; faltan=1; }
+          [ -n "$CF_DIST_ID" ]            || { echo "::error::Falta la variable CF_DIST_ID (pestaña Variables)"; faltan=1; }
+          [ -n "$AWS_ACCESS_KEY_ID" ]     || { echo "::error::Falta el secret AWS_ACCESS_KEY_ID (pestaña Secrets)"; faltan=1; }
+          [ -n "$AWS_SECRET_ACCESS_KEY" ] || { echo "::error::Falta el secret AWS_SECRET_ACCESS_KEY (pestaña Secrets)"; faltan=1; }
+          [ "$faltan" -eq 0 ] || exit 1
+          echo "Bucket: $S3_BUCKET | Distribución: $CF_DIST_ID | Credenciales: presentes"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar
+        run: npx ng build
+
+      - name: Credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: Verificar identidad en AWS
+        run: aws sts get-caller-identity --query Arn --output text
+
+      - name: Subir a S3
+        run: |
+          aws s3 sync dist/portafolio/browser s3://${{ vars.S3_BUCKET }} --delete \
+            --exclude index.html --cache-control "public,max-age=31536000,immutable"
+          aws s3 cp dist/portafolio/browser/index.html s3://${{ vars.S3_BUCKET }}/index.html \
+            --cache-control "no-cache"
+
+      - name: Invalidar caché de CloudFront
+        run: aws cloudfront create-invalidation --distribution-id ${{ vars.CF_DIST_ID }} --paths "/*"
